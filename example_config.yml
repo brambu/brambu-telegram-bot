@@ -1,6 +1,6 @@
 bot_token: 'api_token_for_telegram_bot'
 darksky_token: 'api_token_for_darksky'
-log_path: './chat_logs'
+log_path: './logs/chat.log'
 log_enabled: true
 bot_name: 'brambu_telegram_bot'
 port: 3000
