@@ -43,7 +43,6 @@ func (w WebhookBot) Handler(res http.ResponseWriter, req *http.Request) {
 		if module.Evaluate(body.Message.Chat.ID, body.Message.Text, reqBody) == true {
 			module.Execute(body.Message.Chat.ID, body.Message.Text, reqBody)
 		}
-		return
 	}
 }
 
