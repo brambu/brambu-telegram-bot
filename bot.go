@@ -39,15 +39,17 @@ func main() {
 
 	log.Printf("Bot is now %s", conf.BotName)
 
-	modules := []interfaces.BotModule{
+	botModules := []interfaces.BotModule{
 		// add modules here
-		&botModules.ChatLog{},
-		&botModules.Ping{},
+		&modules.ChatLog{},
+		&modules.Ping{},
 	}
 
-	b := bot.WebhookBot{Config: conf, BotModules: modules}
-	b.Run()
-
+	b := bot.WebhookBot{Config: conf, BotModules: botModules}
+	err := b.Run()
+	if err != nil {
+		log.Printf("Bot %s error: %s", conf.BotName, err)
+	}
 	log.Printf("Bot %s complete.", conf.BotName)
 	log.Printf("%s done, exiting.", NameOfApp)
 }
