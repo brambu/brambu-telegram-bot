@@ -26,17 +26,20 @@ func keyboardInterruptHandler() {
 }
 
 func main() {
-	log.Printf( "%s starting.", NameOfApp)
+	log.Printf("%s starting.", NameOfApp)
 	keyboardInterruptHandler()
 
 	log.Println("Loading configuration...")
 	var conf config.BotConfiguration
-
+	if len(os.Args) != 2 {
+		log.Printf("Add config to command, ex: %s myconfig.yml", os.Args[0])
+		os.Exit(1)
+	}
 	conf.LoadConfiguration(os.Args[1])
 
 	log.Printf("Bot is now %s", conf.BotName)
 
-	modules := []interfaces.BotModule {
+	modules := []interfaces.BotModule{
 		// add modules here
 		&botModules.ChatLog{},
 		&botModules.Ping{},

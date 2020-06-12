@@ -1,4 +1,3 @@
---
 bot_token: 'api_token_for_telegram_bot'
 darksky_token: 'api_token_for_darksky'
 log_path: './chat_logs'

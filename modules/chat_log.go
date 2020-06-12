@@ -7,9 +7,9 @@ import (
 )
 
 type ChatLog struct {
-	config config.BotConfiguration
+	config     config.BotConfiguration
 	fileHandle *os.File
-	logger *log.Logger
+	logger     *log.Logger
 }
 
 func (c *ChatLog) LoadConfig(conf config.BotConfiguration) {
