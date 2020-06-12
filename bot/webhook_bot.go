@@ -1,8 +1,8 @@
 package bot
 
 import (
-	"brambu-telegram-bot/config"
-	"brambu-telegram-bot/interfaces"
+	"github.com/brambu/brambu-telegram-bot/config"
+	"github.com/brambu/brambu-telegram-bot/interfaces"
 	"bytes"
 	"encoding/json"
 	"fmt"

@@ -1,7 +1,7 @@
 package botModules
 
 import (
-	"brambu-telegram-bot/config"
+	"github.com/brambu/brambu-telegram-bot/config"
 	"log"
 	"os"
 )

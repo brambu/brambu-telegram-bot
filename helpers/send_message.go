@@ -1,7 +1,7 @@
 package helpers
 
 import (
-	"brambu-telegram-bot/interfaces"
+	"github.com/brambu/brambu-telegram-bot/interfaces"
 	"bytes"
 	"encoding/json"
 	"errors"

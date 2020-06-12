@@ -1,10 +1,10 @@
 package main
 
 import (
-	"brambu-telegram-bot/bot"
-	"brambu-telegram-bot/config"
-	"brambu-telegram-bot/interfaces"
-	"brambu-telegram-bot/modules"
+	"github.com/brambu/brambu-telegram-bot/bot"
+	"github.com/brambu/brambu-telegram-bot/config"
+	"github.com/brambu/brambu-telegram-bot/interfaces"
+	"github.com/brambu/brambu-telegram-bot/modules"
 	"log"
 	"os"
 	"os/signal"

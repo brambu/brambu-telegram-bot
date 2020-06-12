@@ -1,6 +1,6 @@
 package interfaces
 
-import "brambu-telegram-bot/config"
+import "github.com/brambu/brambu-telegram-bot/config"
 
 type BotModule interface {
 	Evaluate(chatId int64, text string, raw string) bool
