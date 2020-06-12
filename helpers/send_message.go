@@ -12,15 +12,18 @@ import (
 type sendMessageReqBody struct {
 	ChatID int64  `json:"chat_id"`
 	Text   string `json:"text"`
+	ParseMode string `json:"parse_mode"`
 }
 
 func SendMessageToChat(module interfaces.BotModule, chatId int64, messageText string) error {
 	config := module.Config()
 	baseUrl := "https://api.telegram.org/bot"
 	route := "/sendMessage"
+	parseMode := "Markdown"
 	reqBody := &sendMessageReqBody{
 		ChatID: chatId,
 		Text:   messageText,
+		ParseMode: parseMode,
 	}
 
 	reqBytes, err := json.Marshal(reqBody)
