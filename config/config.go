@@ -4,22 +4,24 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
+	"os"
 )
 
 type BotConfiguration struct {
-	ConfigPath string
-	BotName string `yaml:"bot_name"`
-	BotToken string `yaml:"bot_token"`
+	ConfigPath   string
+	BotName      string `yaml:"bot_name"`
+	BotToken     string `yaml:"bot_token"`
 	DarkskyToken string `yaml:"darksky_token"`
-	LogPath string `yaml:"log_path"`
-	LogEnabled bool `yaml:"log_enabled"`
-	Port string `yaml:"port"`
+	LogPath      string `yaml:"log_path"`
+	LogEnabled   bool   `yaml:"log_enabled"`
+	Port         string `yaml:"port"`
 }
 
-func (botConfig* BotConfiguration) LoadConfiguration(filePath string) *BotConfiguration {
+func (botConfig *BotConfiguration) LoadConfiguration(filePath string) *BotConfiguration {
 	yamlFile, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		log.Printf("Error reading config file %s #%v", filePath, err)
+		os.Exit(2)
 	}
 	botConfig.ConfigPath = filePath
 	log.Printf("Loaded :%s", filePath)
@@ -30,4 +32,3 @@ func (botConfig* BotConfiguration) LoadConfiguration(filePath string) *BotConfig
 
 	return botConfig
 }
-

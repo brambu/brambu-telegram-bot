@@ -1,17 +1,17 @@
 package bot
 
 import (
-	"github.com/brambu/brambu-telegram-bot/config"
-	"github.com/brambu/brambu-telegram-bot/interfaces"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/brambu/brambu-telegram-bot/config"
+	"github.com/brambu/brambu-telegram-bot/interfaces"
 	"log"
 	"net/http"
 )
 
 type WebhookBot struct {
-	Config config.BotConfiguration
+	Config     config.BotConfiguration
 	BotModules []interfaces.BotModule
 }
 
@@ -19,7 +19,7 @@ type webhookReqBody struct {
 	Message struct {
 		Text string `json:"text"`
 		Chat struct {
-			ID int64 `json:"id"`
+			ID       int64  `json:"id"`
 			Username string `json:"username"`
 		} `json:"chat"`
 	} `json:"message"`
