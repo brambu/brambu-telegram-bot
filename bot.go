@@ -43,6 +43,7 @@ func main() {
 		// add modules here
 		&modules.ChatLog{},
 		&modules.Ping{},
+		&modules.Weather{},
 	}
 
 	b := bot.WebhookBot{Config: conf, BotModules: botModules}
