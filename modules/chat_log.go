@@ -1,4 +1,4 @@
-package botModules
+package modules
 
 import (
 	"github.com/brambu/brambu-telegram-bot/config"

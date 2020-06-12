@@ -1,5 +1,4 @@
 .idea
 brambu-telegram-bot
 config.yml
-chat_log/*
-chat_log
+chat_logs/*

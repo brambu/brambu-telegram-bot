@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/brambu/brambu-telegram-bot/config"
 	"github.com/brambu/brambu-telegram-bot/interfaces"
-	"log"
 	"net/http"
 )
 
@@ -36,7 +35,6 @@ func (w WebhookBot) Handler(res http.ResponseWriter, req *http.Request) {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(req.Body)
 	reqBody := buf.String()
-	log.Println(reqBody)
 	if err := json.NewDecoder(buf).Decode(body); err != nil {
 		fmt.Println("could not decode request body", err)
 		return
@@ -49,8 +47,12 @@ func (w WebhookBot) Handler(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (w WebhookBot) Run() {
+func (w WebhookBot) Run() error {
 	w.bootstrapModules()
 	port := fmt.Sprintf(":%s", w.Config.Port)
-	http.ListenAndServe(port, http.HandlerFunc(w.Handler))
+	err := http.ListenAndServe(port, http.HandlerFunc(w.Handler))
+	if err != nil {
+		return err
+	}
+	return nil
 }
