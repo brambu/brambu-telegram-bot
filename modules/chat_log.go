@@ -19,10 +19,6 @@ func (c *ChatLog) LoadConfig(conf config.BotConfiguration) {
 	c.config = conf
 }
 
-func (c *ChatLog) Config() config.BotConfiguration {
-	return c.config
-}
-
 func (c *ChatLog) LogLineToFile(line string) error {
 	if c.fileHandle == nil {
 		f, err := os.OpenFile(c.config.LogPath,

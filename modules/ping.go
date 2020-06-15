@@ -15,10 +15,6 @@ func (p *Ping) LoadConfig(conf config.BotConfiguration) {
 	p.config = conf
 }
 
-func (p *Ping) Config() config.BotConfiguration {
-	return p.config
-}
-
 func (p Ping) Evaluate(update tgbotapi.Update) bool {
 	if strings.Contains(strings.ToLower(update.Message.Text), "ping!") {
 		log.Println("Ping detected.")

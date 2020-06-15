@@ -17,10 +17,6 @@ func (s *Speak) LoadConfig(conf config.BotConfiguration) {
 	s.config = conf
 }
 
-func (s *Speak) Config() config.BotConfiguration {
-	return s.config
-}
-
 func (s Speak) EnabledLanguages() []string {
 	return []string{
 		"ar",

@@ -20,10 +20,6 @@ func (w *Weather) LoadConfig(conf config.BotConfiguration) {
 	w.config = conf
 }
 
-func (w *Weather) Config() config.BotConfiguration {
-	return w.config
-}
-
 func (w Weather) GetLocation(searchString string) *geo.Location {
 	g := openstreetmap.Geocoder()
 	res, err := g.Geocode(searchString)

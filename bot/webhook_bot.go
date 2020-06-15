@@ -20,13 +20,7 @@ func (w *WebhookBot) bootstrapModules() {
 	}
 }
 
-func (w WebhookBot) Handler(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
-	for _, module := range w.BotModules {
-		go w.ModuleRun(bot, module, update)
-	}
-}
-
-func (w WebhookBot) ModuleRun(bot *tgbotapi.BotAPI, module interfaces.BotModule, update tgbotapi.Update) {
+func (w WebhookBot) RunModule(bot *tgbotapi.BotAPI, module interfaces.BotModule, update tgbotapi.Update) {
 	if module.Evaluate(update) == true {
 		module.Execute(bot, update)
 	}
@@ -59,7 +53,9 @@ func (w WebhookBot) Run() error {
 	port := fmt.Sprintf(":%s", w.Config.Port)
 	go http.ListenAndServe(port, nil)
 	for update := range updates {
-		w.Handler(bot, update)
+		for _, module := range w.BotModules {
+			go w.RunModule(bot, module, update)
+		}
 	}
 	return nil
 }
