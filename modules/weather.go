@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/alsm/forecastio"
 	"github.com/brambu/brambu-telegram-bot/config"
-	"github.com/brambu/brambu-telegram-bot/helpers"
 	"github.com/codingsince1985/geo-golang"
 	"github.com/codingsince1985/geo-golang/openstreetmap"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
 	"strings"
 	"time"
@@ -93,28 +93,31 @@ func (w Weather) GetWeather(location *geo.Location) string {
 	return strings.Join(retSlice, "\n")
 }
 
-func (w Weather) Evaluate(chatId int64, messageText string, raw string) bool {
-	if strings.HasPrefix(strings.ToLower(messageText), "/weather") {
-		log.Printf("Weather command: %s", messageText)
+func (w Weather) Evaluate(update tgbotapi.Update) bool {
+	if strings.HasPrefix(strings.ToLower(update.Message.Text), "/weather") {
+		log.Printf("Weather command: %s", update.Message.Text)
 		return true
 	}
 	return false
 }
 
-func (w Weather) Execute(chatId int64, messageText string, raw string) {
+func (w Weather) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	log.Println("Sending weather.")
-	searchText := strings.Join(strings.Split(messageText, " ")[1:], " ")
+	searchText := strings.Join(strings.Split(update.Message.Text, " ")[1:], " ")
 	location := w.GetLocation(searchText)
 	if location == nil {
-		err := helpers.SendMessageToChat(&w, chatId, "aroo?")
+		message := tgbotapi.NewMessage(update.Message.Chat.ID, "aroo?")
+		_, err := bot.Send(message)
 		if err != nil {
-			log.Printf("Warning: Weather nolocation error #err")
+			log.Printf("Warning: Weather nolocation error %s", err)
 		}
 		return
 	}
 	weather := w.GetWeather(location)
 
-	err := helpers.SendMessageToChat(&w, chatId, weather)
+	message := tgbotapi.NewMessage(update.Message.Chat.ID, weather)
+	message.ParseMode = "Markdown"
+	_, err := bot.Send(message)
 	if err != nil {
 		log.Printf("Warning: Weather error %s", err)
 	}
