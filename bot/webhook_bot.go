@@ -1,11 +1,11 @@
 package bot
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/brambu/brambu-telegram-bot/config"
 	"github.com/brambu/brambu-telegram-bot/interfaces"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"log"
 	"net/http"
 )
 
@@ -14,48 +14,52 @@ type WebhookBot struct {
 	BotModules []interfaces.BotModule
 }
 
-type webhookReqBody struct {
-	Message struct {
-		Text string `json:"text"`
-		Chat struct {
-			ID       int64  `json:"id"`
-			Username string `json:"username"`
-		} `json:"chat"`
-	} `json:"message"`
-}
-
 func (w *WebhookBot) bootstrapModules() {
 	for _, module := range w.BotModules {
 		go module.LoadConfig(w.Config)
 	}
 }
 
-func (w WebhookBot) Handler(res http.ResponseWriter, req *http.Request) {
-	body := &webhookReqBody{}
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(req.Body)
-	reqBody := buf.String()
-	if err := json.NewDecoder(buf).Decode(body); err != nil {
-		fmt.Println("could not decode request body", err)
-		return
-	}
+func (w WebhookBot) Handler(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	for _, module := range w.BotModules {
-		go w.ModuleRun(module, body.Message.Chat.ID, body.Message.Text, reqBody)
+		go w.ModuleRun(bot, module, update)
 	}
 }
 
-func (w WebhookBot) ModuleRun(module interfaces.BotModule, chatId int64, messageText string, reqBody string) {
-	if module.Evaluate(chatId, messageText, reqBody) == true {
-		module.Execute(chatId, messageText, reqBody)
+func (w WebhookBot) ModuleRun(bot *tgbotapi.BotAPI, module interfaces.BotModule, update tgbotapi.Update) {
+	if module.Evaluate(update) == true {
+		module.Execute(bot, update)
 	}
 }
 
 func (w WebhookBot) Run() error {
 	w.bootstrapModules()
-	port := fmt.Sprintf(":%s", w.Config.Port)
-	err := http.ListenAndServe(port, http.HandlerFunc(w.Handler))
+
+	bot, err := tgbotapi.NewBotAPI(w.Config.BotToken)
 	if err != nil {
-		return err
+		log.Fatal(err)
+	}
+	// bot.Debug = true
+
+	log.Printf("Authorized on account %s", bot.Self.UserName)
+
+	_, err = bot.SetWebhook(tgbotapi.NewWebhook(w.Config.WebhookUrl + w.Config.BotToken))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	info, err := bot.GetWebhookInfo()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if info.LastErrorDate != 0 {
+		log.Printf("Telegram callback failed: %s", info.LastErrorMessage)
+	}
+	updates := bot.ListenForWebhook("/" + w.Config.BotToken)
+	port := fmt.Sprintf(":%s", w.Config.Port)
+	go http.ListenAndServe(port, nil)
+	for update := range updates {
+		w.Handler(bot, update)
 	}
 	return nil
 }

@@ -15,6 +15,7 @@ type BotConfiguration struct {
 	LogPath      string `yaml:"log_path"`
 	LogEnabled   bool   `yaml:"log_enabled"`
 	Port         string `yaml:"port"`
+	WebhookUrl   string `yaml:"webhook_url"`
 }
 
 func (botConfig *BotConfiguration) LoadConfiguration(filePath string) *BotConfiguration {

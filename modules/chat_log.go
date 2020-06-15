@@ -1,7 +1,10 @@
 package modules
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/brambu/brambu-telegram-bot/config"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
 	"os"
 )
@@ -38,13 +41,22 @@ func (c *ChatLog) LogLineToFile(line string) error {
 	return nil
 }
 
-func (c ChatLog) Evaluate(chatId int64, messageText string, raw string) bool {
+func (c ChatLog) Evaluate(update tgbotapi.Update) bool {
 	if c.config.LogEnabled == true {
 		return true
 	}
 	return false
 }
 
-func (c ChatLog) Execute(chatId int64, messageText string, raw string) {
-	c.LogLineToFile(raw)
+func (c ChatLog) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+	message, err := json.Marshal(update.Message)
+	if err != nil {
+		log.Printf("ChatLog marshal error %s", err)
+		return
+	}
+	stringMessage := fmt.Sprintf("%s", message)
+	err = c.LogLineToFile(stringMessage)
+	if err != nil {
+		log.Printf("ChatLog log error %s", err)
+	}
 }

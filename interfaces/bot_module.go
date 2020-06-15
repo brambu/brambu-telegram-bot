@@ -1,10 +1,13 @@
 package interfaces
 
-import "github.com/brambu/brambu-telegram-bot/config"
+import (
+	"github.com/brambu/brambu-telegram-bot/config"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+)
 
 type BotModule interface {
-	Evaluate(chatId int64, text string, raw string) bool
-	Execute(chatId int64, text string, raw string)
+	Evaluate(update tgbotapi.Update) bool
+	Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 	LoadConfig(config config.BotConfiguration)
 	Config() config.BotConfiguration
 }

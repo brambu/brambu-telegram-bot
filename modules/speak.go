@@ -3,8 +3,8 @@ package modules
 import (
 	"fmt"
 	"github.com/brambu/brambu-telegram-bot/config"
-	"github.com/brambu/brambu-telegram-bot/helpers"
 	"github.com/evalphobia/google-tts-go/googletts"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
 	"strings"
 )
@@ -57,19 +57,19 @@ func (s Speak) EnabledLanguages() []string {
 	}
 }
 
-func (s Speak) Evaluate(chatId int64, messageText string, raw string) bool {
-	if strings.HasPrefix(strings.ToLower(messageText), "/speak") {
-		log.Printf("Speak command: %s", messageText)
+func (s Speak) Evaluate(update tgbotapi.Update) bool {
+	if strings.HasPrefix(strings.ToLower(update.Message.Text), "/speak") {
+		log.Printf("Speak command: %s", update.Message.Text)
 		return true
 	}
 	return false
 }
 
-func (s Speak) Execute(chatId int64, messageText string, raw string) {
+func (s Speak) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	log.Println("Sending speak response.")
 	// input like /speak this is how I talk
 	// input like /speak .fr Je parle comme ça
-	speakText := strings.Join(strings.Split(messageText, " ")[1:], " ")
+	speakText := strings.Join(strings.Split(update.Message.Text, " ")[1:], " ")
 	possibleLang := strings.Split(speakText, " ")[0]
 	possibleMessage := strings.Join(strings.Split(speakText, " ")[1:], " ")
 	defaultLang := "en"
@@ -86,8 +86,10 @@ func (s Speak) Execute(chatId int64, messageText string, raw string) {
 	if err != nil {
 		log.Printf("Warning: Speak GetTTS error %s", err)
 	}
-	err = helpers.SendAudioToChatByURL(&s, chatId, url, speakText)
+
+	message := tgbotapi.NewAudioShare(update.Message.Chat.ID, url)
+	_, err = bot.Send(message)
 	if err != nil {
-		log.Printf("Warning: Speak error %s", err)
+		log.Printf("Warning: could not NewAudioShare %s", err)
 	}
 }
