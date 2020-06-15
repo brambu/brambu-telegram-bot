@@ -26,7 +26,7 @@ type webhookReqBody struct {
 
 func (w *WebhookBot) bootstrapModules() {
 	for _, module := range w.BotModules {
-		module.LoadConfig(w.Config)
+		go module.LoadConfig(w.Config)
 	}
 }
 
@@ -40,9 +40,13 @@ func (w WebhookBot) Handler(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	for _, module := range w.BotModules {
-		if module.Evaluate(body.Message.Chat.ID, body.Message.Text, reqBody) == true {
-			module.Execute(body.Message.Chat.ID, body.Message.Text, reqBody)
-		}
+		go w.ModuleRun(module, body.Message.Chat.ID, body.Message.Text, reqBody)
+	}
+}
+
+func (w WebhookBot) ModuleRun(module interfaces.BotModule, chatId int64, messageText string, reqBody string) {
+	if module.Evaluate(chatId, messageText, reqBody) == true {
+		module.Execute(chatId, messageText, reqBody)
 	}
 }
 
