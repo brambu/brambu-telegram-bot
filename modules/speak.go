@@ -88,6 +88,7 @@ func (s Speak) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	}
 
 	message := tgbotapi.NewAudioShare(update.Message.Chat.ID, url)
+	message.Caption = speakText
 	_, err = bot.Send(message)
 	if err != nil {
 		log.Printf("Warning: could not NewAudioShare %s", err)
