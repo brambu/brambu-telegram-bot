@@ -16,6 +16,7 @@ type BotConfiguration struct {
 	LogEnabled   bool   `yaml:"log_enabled"`
 	Port         string `yaml:"port"`
 	WebhookUrl   string `yaml:"webhook_url"`
+	GKeyPath	 string `yaml:"gcloud_key_path"`
 }
 
 func (botConfig *BotConfiguration) LoadConfiguration(filePath string) *BotConfiguration {

@@ -5,3 +5,4 @@ log_enabled: true
 bot_name: 'brambu_telegram_bot'
 port: 3000
 webhook_url: 'https://public.bot.url:8443/'
+gcloud_key_path: './gcloud_key.json'
