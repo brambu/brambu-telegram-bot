@@ -1,6 +1,7 @@
 .idea
 brambu-telegram-bot
 config.yml
+gcloud_key.json
 
 logs
 logs/*

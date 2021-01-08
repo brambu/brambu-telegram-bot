@@ -1,12 +1,18 @@
 package modules
 
 import (
+	"context"
 	"fmt"
 	"github.com/brambu/brambu-telegram-bot/config"
-	"github.com/evalphobia/google-tts-go/googletts"
+	"io/ioutil"
+	"os"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
 	"strings"
+
+	texttospeech "cloud.google.com/go/texttospeech/apiv1"
+	texttospeechpb "google.golang.org/genproto/googleapis/cloud/texttospeech/v1"
 )
 
 type Speak struct {
@@ -78,15 +84,58 @@ func (s Speak) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			speakText = possibleMessage
 		}
 	}
-	url, err := googletts.GetTTSURL(speakText, lang)
+
+	ctx := context.Background()
+
+	client, err := texttospeech.NewClient(ctx)
 	if err != nil {
-		log.Printf("Warning: Speak GetTTS error %s", err)
+		log.Fatal(err)
 	}
 
-	message := tgbotapi.NewAudioShare(update.Message.Chat.ID, url)
+	req := texttospeechpb.SynthesizeSpeechRequest{
+		// Set the text input to be synthesized.
+		Input: &texttospeechpb.SynthesisInput{
+			InputSource: &texttospeechpb.SynthesisInput_Text{Text: speakText},
+		},
+		// Build the voice request, select the language code
+		Voice: &texttospeechpb.VoiceSelectionParams{
+			LanguageCode: lang,
+			SsmlGender:   texttospeechpb.SsmlVoiceGender_NEUTRAL,
+		},
+		// Select the type of audio file you want returned.
+		AudioConfig: &texttospeechpb.AudioConfig{
+			AudioEncoding: texttospeechpb.AudioEncoding_MP3,
+		},
+	}
+
+	resp, err := client.SynthesizeSpeech(ctx, &req)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpFile, err := ioutil.TempFile(os.TempDir(), "brambu-telegram-bot-tts-")
+	if err != nil {
+		log.Fatal("Cannot create temporary file", err)
+	}
+
+	// Remember to clean up the file afterwards
+	defer os.Remove(tmpFile.Name())
+
+	fmt.Println("Created File: " + tmpFile.Name())
+
+	if _, err = tmpFile.Write(resp.AudioContent); err != nil {
+		log.Fatal("Failed to write to temporary file", err)
+	}
+
+	message := tgbotapi.NewAudioUpload(update.Message.Chat.ID, tmpFile.Name())
 	message.Caption = speakText
 	_, err = bot.Send(message)
 	if err != nil {
 		log.Printf("Warning: could not NewAudioShare %s", err)
+	}
+
+	// Close the file
+	if err := tmpFile.Close(); err != nil {
+		log.Fatal(err)
 	}
 }

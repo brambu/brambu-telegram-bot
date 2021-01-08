@@ -36,6 +36,10 @@ func main() {
 		os.Exit(1)
 	}
 	conf.LoadConfiguration(os.Args[1])
+	err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", conf.GKeyPath)
+	if err != nil {
+		log.Printf("Bot error setting google application credentials: %s", err)
+	}
 
 	log.Printf("Bot is now %s", conf.BotName)
 
@@ -48,10 +52,7 @@ func main() {
 	}
 
 	b := bot.WebhookBot{Config: conf, BotModules: botModules}
-	err := b.Run()
-	if err != nil {
-		log.Printf("Bot %s error: %s", conf.BotName, err)
-	}
+	b.Run()
 	log.Printf("Bot %s complete.", conf.BotName)
 	log.Printf("%s done, exiting.", NameOfApp)
 }
