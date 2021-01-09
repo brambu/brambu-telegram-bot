@@ -104,7 +104,7 @@ func (s Speak) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		},
 		// Select the type of audio file you want returned.
 		AudioConfig: &texttospeechpb.AudioConfig{
-			AudioEncoding: texttospeechpb.AudioEncoding_MP3,
+			AudioEncoding: texttospeechpb.AudioEncoding_OGG_OPUS,
 		},
 	}
 
@@ -127,7 +127,7 @@ func (s Speak) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		log.Fatal("Failed to write to temporary file", err)
 	}
 
-	message := tgbotapi.NewAudioUpload(update.Message.Chat.ID, tmpFile.Name())
+	message := tgbotapi.NewVoiceUpload(update.Message.Chat.ID, tmpFile.Name())
 	message.Caption = speakText
 	_, err = bot.Send(message)
 	if err != nil {
