@@ -3,5 +3,7 @@ brambu-telegram-bot
 config.yml
 gcloud_key.json
 
+*System*
+go_build_*
 logs
 logs/*
