@@ -61,7 +61,10 @@ func (s Speak) EnabledLanguages() []string {
 
 func (s Speak) Evaluate(update tgbotapi.Update) bool {
 	if strings.HasPrefix(strings.ToLower(update.Message.Text), "/speak") {
-		log.Printf("Speak command: %s", update.Message.Text)
+		log.Printf("Speak command from [%d,%s]: %s",
+			update.Message.From.ID,
+			update.Message.From.UserName,
+			update.Message.Text)
 		return true
 	}
 	return false
@@ -128,6 +131,7 @@ func (s Speak) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	}
 
 	message := tgbotapi.NewVoiceUpload(update.Message.Chat.ID, tmpFile.Name())
+	message.ReplyToMessageID = update.Message.MessageID
 	message.Caption = speakText
 	_, err = bot.Send(message)
 	if err != nil {

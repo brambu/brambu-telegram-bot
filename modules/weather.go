@@ -91,7 +91,10 @@ func (w Weather) GetWeather(location *geo.Location) string {
 
 func (w Weather) Evaluate(update tgbotapi.Update) bool {
 	if strings.HasPrefix(strings.ToLower(update.Message.Text), "/weather") {
-		log.Printf("Weather command: %s", update.Message.Text)
+		log.Printf("Weather command from [%d,%s]: %s",
+			update.Message.From.ID,
+			update.Message.From.UserName,
+			update.Message.Text)
 		return true
 	}
 	return false
@@ -113,6 +116,8 @@ func (w Weather) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 
 	message := tgbotapi.NewMessage(update.Message.Chat.ID, weather)
 	message.ParseMode = "Markdown"
+	message.ReplyToMessageID = update.Message.MessageID
+
 	_, err := bot.Send(message)
 	if err != nil {
 		log.Printf("Warning: Weather error %s", err)
