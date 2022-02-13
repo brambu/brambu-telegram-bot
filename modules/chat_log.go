@@ -2,9 +2,9 @@ package modules
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/brambu/brambu-telegram-bot/config"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	zlog "github.com/rs/zerolog/log"
 	"log"
 	"os"
 )
@@ -47,12 +47,11 @@ func (c ChatLog) Evaluate(update tgbotapi.Update) bool {
 func (c ChatLog) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	message, err := json.Marshal(update.Message)
 	if err != nil {
-		log.Printf("ChatLog marshal error %s", err)
+		zlog.Error().Msgf("ChatLog marshal error %s", err)
 		return
 	}
-	stringMessage := fmt.Sprintf("%s", message)
-	err = c.LogLineToFile(stringMessage)
+	err = c.LogLineToFile(string(message))
 	if err != nil {
-		log.Printf("ChatLog log error %s", err)
+		zlog.Error().Msgf("ChatLog log error %s", err)
 	}
 }
