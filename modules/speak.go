@@ -8,7 +8,7 @@ import (
 	"os"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"log"
+	"github.com/rs/zerolog/log"
 	"strings"
 
 	texttospeech "cloud.google.com/go/texttospeech/apiv1"
@@ -61,17 +61,18 @@ func (s Speak) EnabledLanguages() []string {
 
 func (s Speak) Evaluate(update tgbotapi.Update) bool {
 	if strings.HasPrefix(strings.ToLower(update.Message.Text), "/speak") {
-		log.Printf("Speak command from [%d,%s]: %s",
-			update.Message.From.ID,
-			update.Message.From.UserName,
-			update.Message.Text)
+		log.Info().
+			Int("from_id", update.Message.From.ID).
+			Str("from_user_name", update.Message.From.UserName).
+			Str("text", update.Message.Text).
+			Msg("speak command")
 		return true
 	}
 	return false
 }
 
 func (s Speak) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
-	log.Println("Sending speak response.")
+	log.Info().Msg("sending speak response.")
 	// input like /speak this is how I talk
 	// input like /speak .fr Je parle comme ça
 	speakText := strings.Join(strings.Split(update.Message.Text, " ")[1:], " ")
@@ -92,7 +93,7 @@ func (s Speak) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 
 	client, err := texttospeech.NewClient(ctx)
 	if err != nil {
-		log.Fatal(err)
+		log.Error().Err(err)
 	}
 
 	req := texttospeechpb.SynthesizeSpeechRequest{
@@ -112,34 +113,42 @@ func (s Speak) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	}
 
 	resp, err := client.SynthesizeSpeech(ctx, &req)
-	if err != nil {
-		log.Fatal(err)
+	if resp == nil || err != nil {
+		log.Error().Err(err).Msg("SynthesizeSpeech empty response")
+		message := tgbotapi.NewMessage(update.Message.Chat.ID, "aroo?")
+		_, e := bot.Send(message)
+		if e != nil {
+			log.Error().Err(err)
+		}
+		return
 	}
 
 	tmpFile, err := ioutil.TempFile(os.TempDir(), "brambu-telegram-bot-tts-")
 	if err != nil {
-		log.Fatal("Cannot create temporary file", err)
+		log.Error().Err(err).Msg("cannot create temporary file")
 	}
 
 	// Remember to clean up the file afterwards
 	defer os.Remove(tmpFile.Name())
 
-	fmt.Println("Created File: " + tmpFile.Name())
+	log.Info().Str("file_name", tmpFile.Name()).Msg("created file")
 
 	if _, err = tmpFile.Write(resp.AudioContent); err != nil {
-		log.Fatal("Failed to write to temporary file", err)
+		log.Error().Err(err).Msg("failed to write temporary file")
 	}
 
 	message := tgbotapi.NewVoiceUpload(update.Message.Chat.ID, tmpFile.Name())
 	message.ReplyToMessageID = update.Message.MessageID
 	message.Caption = speakText
 	_, err = bot.Send(message)
-	if err != nil {
-		log.Printf("Warning: could not NewAudioShare %s", err)
+	if err == nil {
+		log.Info().Str("file_name", tmpFile.Name()).Msg("sent response")
 	}
-
+	if err != nil {
+		log.Warn().Err(err).Msg("could not NewAudioShare")
+	}
 	// Close the file
-	if err := tmpFile.Close(); err != nil {
-		log.Fatal(err)
+	if e := tmpFile.Close(); e != nil {
+		log.Error().Err(err).Msg("could not close temporary file")
 	}
 }
