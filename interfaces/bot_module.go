@@ -9,4 +9,5 @@ type BotModule interface {
 	Evaluate(update tgbotapi.Update) bool
 	Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update)
 	LoadConfig(config config.BotConfiguration)
+	Name() *string
 }

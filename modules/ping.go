@@ -11,26 +11,20 @@ type Ping struct {
 	config config.BotConfiguration
 }
 
+func (p *Ping) Name() *string {
+	name := "ping"
+	return &name
+}
+
 func (p *Ping) LoadConfig(conf config.BotConfiguration) {
 	p.config = conf
 }
 
 func (p Ping) Evaluate(update tgbotapi.Update) bool {
-	if strings.HasPrefix(strings.ToLower(update.Message.Text), "ping!") {
-		log.Info().
-			Int("from_id", update.Message.From.ID).
-			Str("from_user_name", update.Message.From.UserName).
-			Msg("ping detected")
-		return true
-	}
-	return false
+	return strings.HasPrefix(strings.ToLower(update.Message.Text), "ping!")
 }
 
 func (p Ping) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
-	log.Info().
-		Str("chat_title", update.Message.Chat.Title).
-		Int64("chat_id", update.Message.Chat.ID).
-		Msg("Sending pong.")
 	message := tgbotapi.NewMessage(update.Message.Chat.ID, "pong!")
 	message.ReplyToMessageID = update.Message.MessageID
 	_, err := bot.Send(message)
