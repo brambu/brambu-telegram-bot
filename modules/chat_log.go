@@ -4,54 +4,50 @@ import (
 	"encoding/json"
 	"github.com/brambu/brambu-telegram-bot/config"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	zlog "github.com/rs/zerolog/log"
-	"log"
+	"github.com/rs/zerolog/log"
+	golog "log"
 	"os"
 )
 
 type ChatLog struct {
-	config     config.BotConfiguration
-	fileHandle *os.File
-	logger     *log.Logger
+	config config.BotConfiguration
+	logger *golog.Logger
+}
+
+func (c *ChatLog) Name() *string {
+	// return nil to avoid logging evaluated lines
+	return nil
 }
 
 func (c *ChatLog) LoadConfig(conf config.BotConfiguration) {
 	c.config = conf
 }
 
-func (c *ChatLog) LogLineToFile(line string) error {
-	if c.fileHandle == nil {
-		f, err := os.OpenFile(c.config.LogPath,
-			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			log.Println(err)
-		}
-		c.fileHandle = f
-		defer c.fileHandle.Close()
-	}
-	if c.logger == nil {
-		logger := log.New(c.fileHandle, "", log.LstdFlags)
-		c.logger = logger
-	}
-	c.logger.Println(line)
-	return nil
-}
-
 func (c ChatLog) Evaluate(update tgbotapi.Update) bool {
-	if c.config.LogEnabled == true {
-		return true
-	}
-	return false
+	return c.config.LogEnabled
 }
 
 func (c ChatLog) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	message, err := json.Marshal(update.Message)
 	if err != nil {
-		zlog.Error().Msgf("ChatLog marshal error %s", err)
+		log.Error().Err(err).Msg("ChatLog marshal error")
 		return
 	}
-	err = c.LogLineToFile(string(message))
-	if err != nil {
-		zlog.Error().Msgf("ChatLog log error %s", err)
+	if err = c.logLineToFile(string(message)); err != nil {
+		log.Error().Err(err).Msg("ChatLog log error")
 	}
+}
+
+func (c *ChatLog) logLineToFile(line string) error {
+	if c.logger == nil {
+		f, err := os.OpenFile(c.config.LogPath,
+			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Error().Err(err)
+		}
+		logger := golog.New(f, "", golog.LstdFlags)
+		c.logger = logger
+	}
+	c.logger.Println(line)
+	return nil
 }

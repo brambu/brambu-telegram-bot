@@ -16,41 +16,45 @@ type Weather struct {
 	config config.BotConfiguration
 }
 
+func (w *Weather) Name() *string {
+	name := "weather"
+	return &name
+}
+
 func (w *Weather) LoadConfig(conf config.BotConfiguration) {
 	w.config = conf
 }
 
-func (w Weather) GetLocation(searchString string) *geo.Location {
-	g := openstreetmap.Geocoder()
-	res, err := g.Geocode(searchString)
+func (w Weather) Evaluate(update tgbotapi.Update) bool {
+	return strings.HasPrefix(strings.ToLower(update.Message.Text), "/weather")
+}
+
+func (w Weather) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+	log.Info().Msg("Sending weather.")
+	searchText := strings.Join(strings.Split(update.Message.Text, " ")[1:], " ")
+	location := getLocation(searchText)
+	if location == nil {
+		message := tgbotapi.NewMessage(update.Message.Chat.ID, "aroo?")
+		_, err := bot.Send(message)
+		if err != nil {
+			log.Error().Err(err).Msg("weather nolocation error")
+		}
+		return
+	}
+	weather := w.getWeather(location)
+
+	message := tgbotapi.NewMessage(update.Message.Chat.ID, weather)
+	message.ParseMode = "Markdown"
+	message.ReplyToMessageID = update.Message.MessageID
+
+	_, err := bot.Send(message)
 	if err != nil {
-		log.Error().Err(err).
-			Str("search_string", searchString).
-			Msg("weather error getting location")
+		log.Error().Err(err).Msg("weather error sending message")
 	}
-	return res
 }
 
-func (w Weather) GetAddress(location *geo.Location) *geo.Address {
-	g := openstreetmap.Geocoder()
-	res, err := g.ReverseGeocode(location.Lat, location.Lng)
-	if err != nil {
-		log.Error().Err(err).
-			Msg("weather error getting address")
-	}
-	return res
-}
-
-func TimeIn(t time.Time, name string) (time.Time, error) {
-	loc, err := time.LoadLocation(name)
-	if err == nil {
-		t = t.In(loc)
-	}
-	return t, err
-}
-
-func (w Weather) GetWeather(location *geo.Location) string {
-	address := w.GetAddress(location)
+func (w Weather) getWeather(location *geo.Location) string {
+	address := getAddress(location)
 	c := forecastio.NewConnection(w.config.DarkskyToken)
 	err := c.SetUnits("auto")
 	if err != nil {
@@ -63,16 +67,16 @@ func (w Weather) GetWeather(location *geo.Location) string {
 	f.ParseTimes()
 	u := "C"
 	wu := "mps"
-	switch {
-	case f.Flags.Units == "us":
+	switch f.Flags.Units {
+	case "us":
 		u = "F"
 		wu = "mph"
-	case f.Flags.Units == "ca":
+	case "ca":
 		wu = "kph"
-	case f.Flags.Units == "uk2":
+	case "uk2":
 		wu = "mph"
 	}
-	t, _ := TimeIn(f.Currently.Time, f.Timezone)
+	t := timeIn(f.Currently.Time, f.Timezone)
 	log.Info().
 		Int("api_calls", c.APICalls()).
 		Msg("weather darksky api calls made today")
@@ -94,38 +98,31 @@ func (w Weather) GetWeather(location *geo.Location) string {
 	return strings.Join(retSlice, "\n")
 }
 
-func (w Weather) Evaluate(update tgbotapi.Update) bool {
-	if strings.HasPrefix(strings.ToLower(update.Message.Text), "/weather") {
-		log.Info().
-			Int("from_id", update.Message.From.ID).
-			Str("from_user_name", update.Message.From.UserName).
-			Str("text", update.Message.Text).
-			Msg("weather command")
-		return true
+func getLocation(searchString string) *geo.Location {
+	g := openstreetmap.Geocoder()
+	res, err := g.Geocode(searchString)
+	if err != nil {
+		log.Error().Err(err).
+			Str("search_string", searchString).
+			Msg("weather error getting location")
 	}
-	return false
+	return res
 }
 
-func (w Weather) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
-	log.Info().Msg("Sending weather.")
-	searchText := strings.Join(strings.Split(update.Message.Text, " ")[1:], " ")
-	location := w.GetLocation(searchText)
-	if location == nil {
-		message := tgbotapi.NewMessage(update.Message.Chat.ID, "aroo?")
-		_, err := bot.Send(message)
-		if err != nil {
-			log.Error().Err(err).Msg("weather nolocation error")
-		}
-		return
-	}
-	weather := w.GetWeather(location)
-
-	message := tgbotapi.NewMessage(update.Message.Chat.ID, weather)
-	message.ParseMode = "Markdown"
-	message.ReplyToMessageID = update.Message.MessageID
-
-	_, err := bot.Send(message)
+func getAddress(location *geo.Location) *geo.Address {
+	g := openstreetmap.Geocoder()
+	res, err := g.ReverseGeocode(location.Lat, location.Lng)
 	if err != nil {
-		log.Error().Err(err).Msg("weather error sending message")
+		log.Error().Err(err).
+			Msg("weather error getting address")
 	}
+	return res
+}
+
+func timeIn(t time.Time, name string) time.Time {
+	loc, err := time.LoadLocation(name)
+	if err == nil {
+		t = t.In(loc)
+	}
+	return t
 }
