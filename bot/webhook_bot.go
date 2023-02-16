@@ -7,11 +7,20 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/rs/zerolog/log"
 	"net/http"
+	"sync"
 )
+
+const Workers int = 4
 
 type WebhookBot struct {
 	Config     config.BotConfiguration
 	BotModules []interfaces.BotModule
+}
+
+type job struct {
+	update tgbotapi.Update
+	module interfaces.BotModule
+	bot    *tgbotapi.BotAPI
 }
 
 func (w WebhookBot) Run() error {
@@ -45,17 +54,36 @@ func (w WebhookBot) Run() error {
 			log.Error().Err(err)
 		}
 	}()
+	ch := make(chan *job)
+	wg := new(sync.WaitGroup)
+	for i := 0; i < Workers; i++ {
+		wg.Add(1)
+		go w.worker(ch, wg)
+	}
 	for update := range updates {
 		for _, module := range w.BotModules {
-			go runModule(bot, module, update)
+			ch <- &job{
+				bot:    bot,
+				module: module,
+				update: update,
+			}
 		}
 	}
+	wg.Wait()
+	close(ch)
 	return nil
 }
 
 func (w *WebhookBot) bootstrapModules() {
 	for _, module := range w.BotModules {
-		go module.LoadConfig(w.Config)
+		module.LoadConfig(w.Config)
+	}
+}
+
+func (w *WebhookBot) worker(ch chan *job, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for j := range ch {
+		runModule(j.bot, j.module, j.update)
 	}
 }
 
