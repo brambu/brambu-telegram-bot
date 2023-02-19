@@ -48,6 +48,10 @@ func (s *Speak) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		sendMessage(bot, update, s.getHelpMsg())
 		return
 	}
+	if speakText == "" {
+		sendMessage(bot, update, "aroo?")
+		return
+	}
 	resp, err := s.client.SynthesizeSpeech(s.ctx, getTtsReq(speakText, lang))
 	if resp == nil || err != nil {
 		log.Error().Err(err).Msg("SynthesizeSpeech empty response")
