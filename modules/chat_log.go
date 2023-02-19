@@ -23,11 +23,11 @@ func (c *ChatLog) LoadConfig(conf config.BotConfiguration) {
 	c.config = conf
 }
 
-func (c ChatLog) Evaluate(update tgbotapi.Update) bool {
+func (c *ChatLog) Evaluate(update tgbotapi.Update) bool {
 	return c.config.LogEnabled
 }
 
-func (c ChatLog) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+func (c *ChatLog) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	message, err := json.Marshal(update.Message)
 	if err != nil {
 		log.Error().Err(err).Msg("ChatLog marshal error")
