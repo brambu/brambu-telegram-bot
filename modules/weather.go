@@ -25,11 +25,11 @@ func (w *Weather) LoadConfig(conf config.BotConfiguration) {
 	w.config = conf
 }
 
-func (w Weather) Evaluate(update tgbotapi.Update) bool {
+func (w *Weather) Evaluate(update tgbotapi.Update) bool {
 	return strings.HasPrefix(strings.ToLower(update.Message.Text), "/weather")
 }
 
-func (w Weather) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+func (w *Weather) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	log.Info().Msg("Sending weather.")
 	searchText := strings.Join(strings.Split(update.Message.Text, " ")[1:], " ")
 	location := getLocation(searchText)
@@ -53,7 +53,7 @@ func (w Weather) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	}
 }
 
-func (w Weather) getWeather(location *geo.Location) string {
+func (w *Weather) getWeather(location *geo.Location) string {
 	address := getAddress(location)
 	c := forecastio.NewConnection(w.config.DarkskyToken)
 	err := c.SetUnits("auto")

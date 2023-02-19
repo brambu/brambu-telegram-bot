@@ -20,11 +20,11 @@ func (p *Ping) LoadConfig(conf config.BotConfiguration) {
 	p.config = conf
 }
 
-func (p Ping) Evaluate(update tgbotapi.Update) bool {
+func (p *Ping) Evaluate(update tgbotapi.Update) bool {
 	return strings.HasPrefix(strings.ToLower(update.Message.Text), "ping!")
 }
 
-func (p Ping) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+func (p *Ping) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	message := tgbotapi.NewMessage(update.Message.Chat.ID, "pong!")
 	message.ReplyToMessageID = update.Message.MessageID
 	_, err := bot.Send(message)
