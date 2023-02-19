@@ -35,6 +35,7 @@ func (w *Weather) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	location := getLocation(searchText)
 	if location == nil {
 		message := tgbotapi.NewMessage(update.Message.Chat.ID, "aroo?")
+		message.ReplyToMessageID = update.Message.MessageID
 		_, err := bot.Send(message)
 		if err != nil {
 			log.Error().Err(err).Msg("weather nolocation error")
