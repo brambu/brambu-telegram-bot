@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/alsm/forecastio"
 	"github.com/brambu/brambu-telegram-bot/config"
+	. "github.com/brambu/brambu-telegram-bot/helpers"
 	"github.com/codingsince1985/geo-golang"
 	"github.com/codingsince1985/geo-golang/openstreetmap"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -13,7 +14,9 @@ import (
 )
 
 type Weather struct {
-	config config.BotConfiguration
+	config   config.BotConfiguration
+	client   *forecastio.APIConn
+	geocoder geo.Geocoder
 }
 
 func (w *Weather) Name() *string {
@@ -23,45 +26,36 @@ func (w *Weather) Name() *string {
 
 func (w *Weather) LoadConfig(conf config.BotConfiguration) {
 	w.config = conf
+	client := forecastio.NewConnection(w.config.DarkskyToken)
+	err := client.SetUnits("auto")
+	if err != nil {
+		log.Error().Err(err).Msg("weather darksky set units error")
+	}
+	w.client = client
+	w.geocoder = openstreetmap.Geocoder()
 }
 
 func (w *Weather) Evaluate(update tgbotapi.Update) bool {
-	return strings.HasPrefix(strings.ToLower(update.Message.Text), "/weather")
+	return CheckPrefix(update, "/weather")
 }
 
 func (w *Weather) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	log.Info().Msg("Sending weather.")
-	searchText := strings.Join(strings.Split(update.Message.Text, " ")[1:], " ")
-	location := getLocation(searchText)
+	searchText := strings.Join(strings.Split(GetUpdateMessageText(update), " ")[1:], " ")
+	location := w.getLocation(searchText)
 	if location == nil {
-		message := tgbotapi.NewMessage(update.Message.Chat.ID, "aroo?")
-		message.ReplyToMessageID = update.Message.MessageID
-		_, err := bot.Send(message)
-		if err != nil {
-			log.Error().Err(err).Msg("weather nolocation error")
-		}
+		ReplyWithText(bot, update, "aroo?")
 		return
 	}
-	weather := w.getWeather(location)
-
-	message := tgbotapi.NewMessage(update.Message.Chat.ID, weather)
-	message.ParseMode = "Markdown"
-	message.ReplyToMessageID = update.Message.MessageID
-
-	_, err := bot.Send(message)
-	if err != nil {
-		log.Error().Err(err).Msg("weather error sending message")
-	}
+	ReplyWithText(bot, update, w.getWeather(location))
 }
 
 func (w *Weather) getWeather(location *geo.Location) string {
-	address := getAddress(location)
-	c := forecastio.NewConnection(w.config.DarkskyToken)
-	err := c.SetUnits("auto")
-	if err != nil {
-		log.Error().Err(err).Msg("weather darksky set units error")
-	}
-	f, err := c.Forecast(location.Lat, location.Lng, []string{}, false)
+	address := w.getAddress(location)
+	f, err := w.client.Forecast(location.Lat, location.Lng, []string{}, false)
+	log.Info().
+		Int("api_calls", w.client.APICalls()).
+		Msg("weather darksky api call counter")
 	if err != nil {
 		return "aroo?"
 	}
@@ -78,9 +72,6 @@ func (w *Weather) getWeather(location *geo.Location) string {
 		wu = "mph"
 	}
 	t := timeIn(f.Currently.Time, f.Timezone)
-	log.Info().
-		Int("api_calls", c.APICalls()).
-		Msg("weather darksky api calls made today")
 	retSlice := []string{
 		fmt.Sprintf("Current Weather for %s %s %s at %s\n",
 			address.City, address.State, address.CountryCode, t.Format("Jan 02, 2006 15:04")),
@@ -99,9 +90,8 @@ func (w *Weather) getWeather(location *geo.Location) string {
 	return strings.Join(retSlice, "\n")
 }
 
-func getLocation(searchString string) *geo.Location {
-	g := openstreetmap.Geocoder()
-	res, err := g.Geocode(searchString)
+func (w *Weather) getLocation(searchString string) *geo.Location {
+	res, err := w.geocoder.Geocode(searchString)
 	if err != nil {
 		log.Error().Err(err).
 			Str("search_string", searchString).
@@ -110,9 +100,8 @@ func getLocation(searchString string) *geo.Location {
 	return res
 }
 
-func getAddress(location *geo.Location) *geo.Address {
-	g := openstreetmap.Geocoder()
-	res, err := g.ReverseGeocode(location.Lat, location.Lng)
+func (w *Weather) getAddress(location *geo.Location) *geo.Address {
+	res, err := w.geocoder.ReverseGeocode(location.Lat, location.Lng)
 	if err != nil {
 		log.Error().Err(err).
 			Msg("weather error getting address")

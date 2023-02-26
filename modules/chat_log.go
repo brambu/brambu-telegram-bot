@@ -1,17 +1,14 @@
 package modules
 
 import (
-	"encoding/json"
 	"github.com/brambu/brambu-telegram-bot/config"
+	"github.com/brambu/brambu-telegram-bot/logger"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/rs/zerolog/log"
-	golog "log"
-	"os"
 )
 
 type ChatLog struct {
 	config config.BotConfiguration
-	logger *golog.Logger
+	logger logger.Logger
 }
 
 func (c *ChatLog) Name() *string {
@@ -21,6 +18,9 @@ func (c *ChatLog) Name() *string {
 
 func (c *ChatLog) LoadConfig(conf config.BotConfiguration) {
 	c.config = conf
+	l := logger.Logger{}
+	l.LoadConfig(c.config.LogPath)
+	c.logger = l
 }
 
 func (c *ChatLog) Evaluate(update tgbotapi.Update) bool {
@@ -28,26 +28,5 @@ func (c *ChatLog) Evaluate(update tgbotapi.Update) bool {
 }
 
 func (c *ChatLog) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
-	message, err := json.Marshal(update.Message)
-	if err != nil {
-		log.Error().Err(err).Msg("ChatLog marshal error")
-		return
-	}
-	if err = c.logLineToFile(string(message)); err != nil {
-		log.Error().Err(err).Msg("ChatLog log error")
-	}
-}
-
-func (c *ChatLog) logLineToFile(line string) error {
-	if c.logger == nil {
-		f, err := os.OpenFile(c.config.LogPath,
-			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			log.Error().Err(err)
-		}
-		logger := golog.New(f, "", golog.LstdFlags)
-		c.logger = logger
-	}
-	c.logger.Println(line)
-	return nil
+	c.logger.HandleUpdate(&update)
 }
