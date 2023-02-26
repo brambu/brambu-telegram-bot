@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/brambu/brambu-telegram-bot/config"
+	. "github.com/brambu/brambu-telegram-bot/helpers"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/rs/zerolog/log"
 	"sort"
@@ -37,7 +38,7 @@ func (s *Speak) LoadConfig(conf config.BotConfiguration) {
 }
 
 func (s *Speak) Evaluate(update tgbotapi.Update) bool {
-	return strings.HasPrefix(strings.ToLower(update.Message.Text), "/speak")
+	return CheckPrefix(update, "/speak")
 }
 
 func (s *Speak) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
@@ -45,33 +46,23 @@ func (s *Speak) Execute(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	// input like /speak .fr Je parle comme ça
 	speakText, lang := parseSpeakMsg(update, s.enabledLanguages)
 	if lang == "help" {
-		sendMessage(bot, update, s.getHelpMsg())
+		ReplyWithText(bot, update, getHelpMsg())
 		return
 	}
 	if speakText == "" {
-		sendMessage(bot, update, "aroo?")
+		ReplyWithText(bot, update, "aroo?")
 		return
 	}
 	resp, err := s.client.SynthesizeSpeech(s.ctx, getTtsReq(speakText, lang))
 	if resp == nil || err != nil {
 		log.Error().Err(err).Msg("SynthesizeSpeech empty response")
-		sendMessage(bot, update, "aroo?")
+		ReplyWithText(bot, update, "aroo?")
 		return
 	}
-	file := tgbotapi.FileBytes{
-		Name:  speakText,
-		Bytes: resp.GetAudioContent(),
-	}
-	message := tgbotapi.NewVoiceUpload(update.Message.Chat.ID, file)
-	message.ReplyToMessageID = update.Message.MessageID
-	message.Caption = speakText
-	_, err = bot.Send(message)
-	if err != nil {
-		log.Warn().Err(err).Msg("could not NewAudioShare")
-	}
+	SendVoice(bot, update, resp.GetAudioContent(), speakText)
 }
 
-func (s *Speak) getHelpMsg() string {
+func getHelpMsg() string {
 	return fmt.Sprintf(
 		"examples:\n\n%s\n%s\n\n[pick a lanugage code from here](%s)",
 		"`/speak this is how I talk`",
@@ -102,18 +93,8 @@ func (s *Speak) getEnabledLanguages() {
 	s.enabledLanguages = languageCodes
 }
 
-func sendMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update, message string) {
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, message)
-	msg.ReplyToMessageID = update.Message.MessageID
-	msg.ParseMode = "markdown"
-	_, err := bot.Send(msg)
-	if err != nil {
-		log.Error().Err(err).Str("message", message).Msg("could not send speak msg")
-	}
-}
-
 func parseSpeakMsg(update tgbotapi.Update, enabledLanguages []string) (string, string) {
-	speakText := strings.Join(strings.Split(update.Message.Text, " ")[1:], " ")
+	speakText := strings.Join(strings.Split(GetUpdateMessageText(update), " ")[1:], " ")
 	possibleLang := strings.Split(speakText, " ")[0]
 	if possibleLang == ".help" {
 		return "", "help"
